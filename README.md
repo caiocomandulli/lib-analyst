@@ -11,69 +11,67 @@ ActionAnalyst analyst = new ActionAnalyst(this, contractDatabase);
 EventLogger.init(analyst);
 ````
 
+First you initialize the `EventLogger`,
+that allows you to log from anywhere in your application by calling its static methods.
+
+`EventLogger` requires a `ActionAnalyst`, that handles all logging behaviour.
+
 ```java
-EventLogger.onActivityResume(this.getClass());
-EventLogger.onActivityPause(this.getClass());
+@Override
+public void onResume() {
+    super.onResume();
+    EventLogger.onActivityResume(this.getClass());
+}
+
+@Override
+protected void onPause() {
+    super.onPause();
+    EventLogger.onActivityPause(this.getClass());
+}
 ````
 
+Example of its use, we can log the pause and resume of our activity,
+allowing us to know the amount of time the user is viewing an article for example.
+
 ### Surveys
+
+`Survey` specify how the analyst will handle a group of event types.
+
+You can tie it to an activity class with `addSurvey(Class<?>, ActionSurvey)`,
+all events related to that activity will be handled by this survey.
 
 ```java
 public class RegisterSurvey extends ActionSurvey {
 
-	// 006s
 	public static final EventType EVENT_REGISTER_STARTED = new EventType(106, "RegisterStarted", SuperType.Open);
 	public static final EventType EVENT_REGISTER_CANCELLED = new EventType(206, "RegisterCancelled", SuperType.Close);
 	public static final EventType EVENT_REGISTER_ENDED = new EventType(306, "RegisterEnded", SuperType.Terminated);
 	public static final EventType EVENT_REGISTER_PAUSED = new EventType(406, "RegisterPaused", SuperType.Pause);
 	public static final EventType EVENT_REGISTER_RESUMED = new EventType(506, "RegisterResumed", SuperType.Resume);
+	.....
+````
 
-	private boolean isPaused;
-	private Event pausedEvent;
+Here we implement a survey for a registration form.
+We define five `EventType` and code them (personally I like to code it as you would code a HTTP Status).
 
-	public RegisterSurvey(ActionAnalyst analyst) {
+```java
+    .....
+    public RegisterSurvey(ActionAnalyst analyst) {
 		super(analyst);
-		addToContained(CheckVoucherActivity.class.getSimpleName());
+		addToContained(RegisterIntroductionActivity.class.getSimpleName());
 		addToContained(RegisterFormActivity.class.getSimpleName());
 	}
+    .....
+````
 
-	@Override
-	public void survey(Event event, Class<?> activity) {
-		Event potentialPausedEvent = analyst.searchPendingEvent(EVENT_REGISTER_PAUSED.getCode());
-		isPaused = potentialPausedEvent != null;
-		if (isPaused) {
-			pausedEvent = potentialPausedEvent;
-		}
-		super.survey(event, activity);
-	}
+At our constructor we register classes relevant to our registration form.
+All activities `contained` in our `Survey` are handled by this class.
 
-	@Override
-	public void surveyResume(Event event, Class<?> activity) {
-		analyst.getDefaultSurvey().survey(event, activity);
-		if (isPaused) {
-			try {
-				long pauseTimestamp = EventLogger.dateFormat.parse(pausedEvent.getTimestamp()).getTime();
-				long now = new Date().getTime();
-				if (pauseTimestamp != 0L && now - pauseTimestamp > ApplicationSurvey.DELAY_FOR_PAUSE) {
-					resume(event.getData());
-				} else {
-					analyst.removeFromPending(pausedEvent);
-					pausedEvent = null;
-				}
-			} catch (ParseException e) {
-				resume(event.getData());
-			}
-		} else {
-			open(event.getData());
-		}
-	}
+For example if our user enters either our form or the introduction we will log that a registration has started.
+But if the user navigate from the introduction to the form it wont count as a registration cancelled.
 
-	@Override
-	public void surveyPause(Event event, Class<?> activity) {
-		pause(event.getData());
-		analyst.getDefaultSurvey().survey(event, activity);
-	}
-
+```java
+    .....
 	@Override
 	public void open(DataWrapper data) {
 		analyst.addToPending(new Event(EVENT_REGISTER_STARTED, EventLogger.getCurrentTime(), data));
@@ -112,12 +110,15 @@ public class RegisterSurvey extends ActionSurvey {
 		}
 		analyst.addToSync(new Event(EVENT_REGISTER_RESUMED, EventLogger.getCurrentTime(), data));
 	}
+    .....
 
-}
 ````
 
+Then we can handle the specific actions that occur at an event and determine its type and how it will be processed.
 
 ### Custom Analysts
+
+With custom analysts we can provide specific behaviour on how to handle all events.
 
 ```java
 public class MyAnalyst extends SynchronizedActionAnalyst {
@@ -135,50 +136,39 @@ public class MyAnalyst extends SynchronizedActionAnalyst {
         setDefaultSurvey(applicationSurvey);
         addSurvey(RegisterFormActivity.class, registerSurvey);
     }
+    .....
+````
 
+We can define our surveys at the constructor.
+
+```java
+    .....
     @Override
     public void addToSync(Event event) {
-        event.getData().putValue("device", DeviceInfo.getAppIdentifier(getContext()));
+        event.getData().putValue("device", deviceIdentifier);
         super.addToSync(event);
     }
 
     @Override
     public void addToPending(Event event) {
-        event.getData().putValue("device", DeviceInfo.getAppIdentifier(getContext()));
+        event.getData().putValue("device", deviceIdentifier);
         super.addToPending(event);
     }
 
     @Override
     public void analyze(Event event, Class<?> activity) {
-        int userId = PersonalDataProvider.get().getUserId();
-        if (userId != -1) {
+        if (userId != null) {
             event.getData().putValue("user", String.valueOf(userId));
         }
         super.analyze(event, activity);
     }
-
-    public static void onLogin() {
-        if (currentAnalyst != null) {
-            DataWrapper data = new DataWrapper(new HashMap<String, Object>());
-            ((MyAnalyst) currentAnalyst).authSurvey.open(data);
-            ((MyAnalyst) currentAnalyst).synchronize();
-        } else {
-            Log.i("Analyst", "No Analyst, Event Logger not logging.");
-        }
-    }
-
-    public static void onLogout() {
-        if (currentAnalyst != null) {
-            DataWrapper data = new DataWrapper(new HashMap<String, Object>());
-            ((MyAnalyst) currentAnalyst).authSurvey.close(data);
-            ((MyAnalyst) currentAnalyst).synchronize();
-        } else {
-            Log.i("Analyst", "No Analyst, Event Logger not logging.");
-        }
-    }
-
-}
+    .....
 ````
+
+Add data relevant to all events.
+
+At the example, every time we add an event we append the Identifier of this device.
+And every time an event is analysed if we have a user, we append its Id.
 
 ### Synchronized Analysis
 
@@ -219,6 +209,11 @@ MIT License. See the file LICENSE.md with the full license text.
 [![Caio Comandulli](https://avatars3.githubusercontent.com/u/3738961?v=3&s=150)](https://github.com/caiocomandulli "On Github")
 
 Copyright (c) 2016 Caio Comandulli
+
+## Third party libraries
+
+This library uses REST Android Library by Caio Comandulli (myself), version 1.0. Copyright (C) 2016 Caio Comandulli. Licensed under MIT License.
+This library uses Contracts Android Library by Caio Comandulli (myself), version 1.0. Copyright (C) 2016 Caio Comandulli. Licensed under MIT License.
 
 ## Compatibility
 

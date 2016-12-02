@@ -20,7 +20,7 @@ public abstract class ActionSurvey {
      */
     protected final ActionAnalyst analyst;
     /**
-     * The Contained events.
+     * The Contained classes that compose this type group.
      */
     protected final List<String> contained = new ArrayList<>();
 
