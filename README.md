@@ -213,6 +213,7 @@ Copyright (c) 2016 Caio Comandulli
 ## Third party libraries
 
 This library uses REST Android Library by Caio Comandulli (myself), version 1.0. Copyright (C) 2016 Caio Comandulli. Licensed under MIT License.
+
 This library uses Contracts Android Library by Caio Comandulli (myself), version 1.0. Copyright (C) 2016 Caio Comandulli. Licensed under MIT License.
 
 ## Compatibility
