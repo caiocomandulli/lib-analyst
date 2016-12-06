@@ -155,10 +155,10 @@ public class SynchronizedActionAnalyst extends ActionAnalyst {
                     if (enigma != null && enigma.value != null) {
                         // check server integrity
                         String receivedEnigma = enigma.value;
-                        String expectedEnigma = MD5.encode(serial + ":" + ENIGMA_SALT + ":" + enigma.id);
+                        String expectedEnigma = MD5.encode(serial + ":" + enigmaSalt + ":" + enigma.id);
                         if (receivedEnigma.equals(expectedEnigma)) {
                             // solve
-                            String solution = MD5.encode(receivedEnigma + ":" + SOLUTION_SALT);
+                            String solution = MD5.encode(receivedEnigma + ":" + solutionSalt);
                             boolean success = submitSolution(syncThis, solution, enigma.id, serial);
                             if (success) {
                                 // success, remove all from database

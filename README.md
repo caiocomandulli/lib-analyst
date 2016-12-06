@@ -7,7 +7,7 @@ Analyst makes logging ALL actions that occur in your application simple.
 ### Initialization
 
 ````java
-ActionAnalyst analyst = new ActionAnalyst(this, contractDatabase);
+ActionAnalyst analyst = new ActionAnalyst(context, contractDatabase);
 EventLogger.init(analyst);
 ````
 
@@ -30,7 +30,7 @@ protected void onPause() {
 }
 ````
 
-Example of its use, we can log the pause and resume of our activity,
+Example of its use, we can log the pause and resume of our `Activity`,
 allowing us to know the amount of time the user is viewing an article for example.
 
 ### Surveys

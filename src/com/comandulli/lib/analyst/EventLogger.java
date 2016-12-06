@@ -2,10 +2,10 @@ package com.comandulli.lib.analyst;
 
 import android.util.Log;
 
-import com.comandulli.analyst.entity.DataWrapper;
-import com.comandulli.analyst.entity.Event;
-import com.comandulli.analyst.entity.EventType;
-import com.comandulli.analyst.entity.EventType.SuperType;
+import com.comandulli.lib.analyst.entity.DataWrapper;
+import com.comandulli.lib.analyst.entity.Event;
+import com.comandulli.lib.analyst.entity.EventType;
+import com.comandulli.lib.analyst.entity.EventType.SuperType;
 import com.comandulli.lib.TimeStringFormatter;
 
 import java.text.SimpleDateFormat;
